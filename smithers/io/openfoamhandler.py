@@ -234,7 +234,7 @@ class OpenFoamHandler:
     @classmethod
     def read(cls, filename, fields_time_instants="first", field_names="all"):
         """Read the OpenFOAM mesh at the given path. Parsing of multiple time
-        instants and of fields is supported. At the moment the mesh isn not
+        instants and of fields is supported. At the moment the mesh is not
         allowed to change (WIP).
 
         :param filename: The root folder of the mesh.
