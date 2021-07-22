@@ -180,9 +180,12 @@ class OpenFoamHandler:
             `fields_root_path`) or a `list` of exact names of the selected
             subfolders.
         :type field_names: str or list
-        :returns: A dictionary of fields, whose names are the names of the
-            fields, and the values are 2-tuple (first item: the boundary field,
-            second item: the internal field).
+        :returns: A dictionary of fields, whose keys are the names of the
+            fields, and the values are 2-tuple whose indexes are organized as
+            follows:
+
+            0. Boundary value of the field (or `None` if not available);
+            1. Internal value of the field (or `None` if not available).
         :rtype: dict
         """
         field_files = cls._find_fields_files(time_instant_path, field_names)
@@ -208,6 +211,7 @@ class OpenFoamHandler:
             `field_names` for the function :func:`_load_fields`.
         :type field_names: str or list
         :returns: A dictionary with keys:
+
             * `'points'`: points of the mesh at the given time instants;
             * `'faces'`: faces of the mesh at the given time instants;
             * `'boundary'`: output of :func:`_build_boundary`;
@@ -232,32 +236,38 @@ class OpenFoamHandler:
         }
 
     @classmethod
-    def read(cls, filename, fields_time_instants="first", field_names="all"):
+    def read(cls, filename, time_instants="first", field_names="all"):
         """Read the OpenFOAM mesh at the given path. Parsing of multiple time
-        instants and of fields is supported. At the moment the mesh is not
-        allowed to change (WIP).
+        instants and of fields is supported.
+
+        .. warning::
+            At the moment the mesh is not allowed to change. We chose this
+            interface to facilitate the conversion when this feature becomes
+            available.
 
         :param filename: The root folder of the mesh.
         :type filename: str
-        :param fields_time_instants: Refer to the documentation of the parameter
+        :param time_instants: Refer to the documentation of the parameter
             `field_names` for the function
             :func:`_find_time_instants_subfolders`.
-        :type fields_time_instants: str or list
+        :type time_instants: str or list
         :param field_names: Refer to the documentation of the parameter
             `field_names` for the function :func:`_load_fields`.
         :type field_names: str or list
         :returns: A dictionary whose keys are the time instants found for this
-            mesh, and the values are the corresponding output of
-            :func:`_build_time_instant_snapshot`. If only one time isntant is
-            found the upper dictionary is skipped (the output of the function
-            is the output of :func:`_build_time_instant_snapshot`).
+            mesh, and the values are the corresponding outputs of
+            :func:`_build_time_instant_snapshot`.
+
+            .. note::
+                If only one time instant is found the upper dictionary is
+                skipped.
         :rtype: dict
         """
 
         ofpp_mesh = Ofpp.FoamMesh(filename)
 
         time_instants = cls._find_time_instants_subfolders(filename,
-            fields_time_instants)
+            time_instants)
         if time_instants is not None:
             return dict((name, cls._build_time_instant_snapshot(ofpp_mesh,
                 path, field_names)) for name, path in time_instants)
