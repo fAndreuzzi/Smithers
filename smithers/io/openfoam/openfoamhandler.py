@@ -313,7 +313,7 @@ class OpenFoamHandler:
                 Parser.FACES,
             )
 
-            if points is None:
+            if faces is None:
                 print("'faces' not found at t={}, using the initial value.".format(time_instant_path))
                 faces = mesh.faces
 
@@ -325,7 +325,7 @@ class OpenFoamHandler:
                 Parser.BOUNDARY,
             )
 
-            if points is None:
+            if boundary_data is None:
                 print("'boundary' not found at t={}, using the initial value.".format(time_instant_path))
                 # TODO: what if only certain boundaries are moving?
                 boundary_data = mesh.boundary
