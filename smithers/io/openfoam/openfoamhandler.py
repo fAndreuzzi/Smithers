@@ -3,14 +3,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from operator import itemgetter
-
-
-def _polyarea(x, y):
-    return 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
-
-
-def project(points, vectors):
-    return np.dot(points, vectors)
+from .openfoamutils import polyarea, project, Parser, read_mesh_file
 
 
 class OpenFoamHandler:
@@ -19,14 +12,16 @@ class OpenFoamHandler:
     """
 
     @classmethod
-    def _build_boundary(cls, mesh, boundary_name):
+    def _build_boundary(cls, points, faces, boundary_data):
         """Extract information about a boundary.
 
-        :param mesh: An Ofpp OpenFOAM mesh.
-        :type mesh: Ofpp.mesh_parser.FoamMesh
-        :param boundary_name: The boundary name (must be a key of the dictionary
-            `mesh.boundary`).
-        :type boundary_name: str
+        :param points: An array of the points which compose the mesh.
+        :type mesh: np.ndarray
+        :param points: Faces which compose the whole mesh, represented by a list
+            of lists of point indexes.
+        :type mesh: np.ndarray
+        :param boundary_data: A dict of data which represents the boundary.
+        :type boundary_dict: dict
         :returns: A dictionary which contains the keys `'faces'`, `'points'`,
             `'type'`. The value corresponding to the key `'faces'` is a
             dictionary which contains the following keys:
@@ -35,16 +30,14 @@ class OpenFoamHandler:
             * `'normals'`: The normalized vector normal to each face. The direction is taken according to the right-hand rule.
         :rtype: dict
         """
-        data = mesh.boundary[boundary_name]
-
         # extract the indexes of the faces which compose the boundary
-        bd_faces_indexes = list(range(data.start, data.start + data.num))
+        bd_faces_indexes = list(
+            range(boundary_data.start, boundary_data.start + boundary_data.num)
+        )
 
         # extract the faces which compose the boundary. each face is a
         # list of indexes of points
-        bd_faces = np.concatenate(
-            [mesh.faces[idx] for idx in bd_faces_indexes]
-        )
+        bd_faces = np.concatenate([faces[idx] for idx in bd_faces_indexes])
         # extract a list of unique points which compose the boundary
         bd_points = np.unique(bd_faces)
 
@@ -53,12 +46,12 @@ class OpenFoamHandler:
         # fix the problem that there may not be a unique number of points for
         # each face.
         first_three_points_indexes = np.concatenate(
-            [mesh.faces[idx][:3] for idx in bd_faces_indexes]
+            [faces[idx][:3] for idx in bd_faces_indexes]
         )
         # the second index is the index of the point, the third is the cartesian
         # index
         first_three_points = np.reshape(
-            (mesh.points[first_three_points_indexes]), (-1, 3, 3)
+            (points[first_three_points_indexes]), (-1, 3, 3)
         )
         vectors1 = first_three_points[:, 1] - first_three_points[:, 0]
         vectors2 = first_three_points[:, 2] - first_three_points[:, 0]
@@ -85,21 +78,23 @@ class OpenFoamHandler:
             [lying_versors1[:, None], lying_versors2[:, None]], axis=1
         )
 
-        area = []
         # now we compute the area. we have to use a loop since the number of
         # points per face may not be unique
-        for face, versors in zip(
-            map(mesh.faces.__getitem__, bd_faces_indexes), lying_versors
-        ):
-            points = mesh.points[face]
-            projections = np.dot(points,versors.T)
-            area.append(_polyarea(*projections.T))
+        area = [
+            _polyarea(*project(points[point_idxes], versors).T)
+            # for each face we have a matrix of two rows, which contain a couple
+            # of orthogonal normalized vectors which lie on the corresponding
+            # face
+            for point_idxes, versors in zip(
+                map(faces.__getitem__, bd_faces_indexes), lying_versors
+            )
+        ]
 
         return {
             "faces": {
                 "faces_indexes": bd_faces_indexes,
                 "normal": normals_versors,
-                'area': area,
+                "area": area,
             },
             "points": bd_points,
             "type": data.type,
@@ -272,7 +267,7 @@ class OpenFoamHandler:
 
     @classmethod
     def _build_time_instant_snapshot(
-        cls, mesh, time_instant_path, field_names
+        cls, mesh, time_instant_path, field_names, traveling_mesh
     ):
         """Read all the content available for the time instant at the given
             path.
@@ -294,12 +289,36 @@ class OpenFoamHandler:
         :rtype: dict
         """
 
-        # TODO: e se la mesh cambia?
+        if not traveling_mesh:
+            points = mesh.points
+        else:
+            points = read_mesh_file(
+                os.path.join(time_instant_path, "polyMesh/points"),
+                Parser.POINTS,
+            )
+
+        if not traveling_mesh:
+            faces = np.asarray(mesh.faces)
+        else:
+            faces = read_mesh_file(
+                os.path.join(time_instant_path, "polyMesh/faces"),
+                Parser.FACES,
+            )
+
+        if not traveling_mesh:
+            boundary_data = mesh.boundary
+        else:
+            boundary_data = read_mesh_file(
+                os.path.join(time_instant_path, "polyMesh/boundary"),
+                Parser.BOUNDARY,
+            )
+
         return {
-            "points": mesh.points,
-            "faces": np.array(mesh.faces),
+            "points": points,
+            "faces": faces,
             "boundary": {
-                key: cls._build_boundary(mesh, key) for key in mesh.boundary
+                key: cls._build_boundary(points, faces, boundary_data[key])
+                for key in mesh.boundary
             },
             "cells": {
                 cell_id: cls._build_cells(mesh, cell_id)
@@ -309,7 +328,13 @@ class OpenFoamHandler:
         }
 
     @classmethod
-    def read(cls, filename, time_instants="first", field_names="all"):
+    def read(
+        cls,
+        filename,
+        time_instants="first",
+        field_names="all",
+        traveling_mesh=False,
+    ):
         """Read the OpenFOAM mesh at the given path. Parsing of multiple time
         instants and of fields is supported.
 
@@ -347,7 +372,7 @@ class OpenFoamHandler:
                 (
                     name,
                     cls._build_time_instant_snapshot(
-                        ofpp_mesh, path, field_names
+                        ofpp_mesh, path, field_names, traveling_mesh
                     ),
                 )
                 for name, path in time_instants
