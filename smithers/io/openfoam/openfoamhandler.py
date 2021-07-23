@@ -301,6 +301,10 @@ class OpenFoamHandler:
                 Parser.POINTS,
             )
 
+            if points is None:
+                print("'points' not found at t={}, using the initial value.".format(time_instant_path))
+                points = mesh.points
+
         if not traveling_mesh:
             faces = np.asarray(mesh.faces)
         else:
@@ -309,6 +313,10 @@ class OpenFoamHandler:
                 Parser.FACES,
             )
 
+            if points is None:
+                print("'faces' not found at t={}, using the initial value.".format(time_instant_path))
+                faces = mesh.faces
+
         if not traveling_mesh:
             boundary_data = mesh.boundary
         else:
@@ -316,6 +324,11 @@ class OpenFoamHandler:
                 os.path.join(time_instant_path, "polyMesh/boundary"),
                 Parser.BOUNDARY,
             )
+
+            if points is None:
+                print("'boundary' not found at t={}, using the initial value.".format(time_instant_path))
+                # TODO: what if only certain boundaries are moving?
+                boundary_data = mesh.boundary
 
         return {
             "points": points,
