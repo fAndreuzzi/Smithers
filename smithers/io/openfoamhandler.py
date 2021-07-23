@@ -5,6 +5,14 @@ import matplotlib.pyplot as plt
 from operator import itemgetter
 
 
+def _polyarea(x, y):
+    return 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
+
+
+def project(points, vectors):
+    return np.dot(points, vectors)
+
+
 class OpenFoamHandler:
     """
     Handler for OpenFOAM output files, based on the project Ofpp.
@@ -19,20 +27,83 @@ class OpenFoamHandler:
         :param boundary_name: The boundary name (must be a key of the dictionary
             `mesh.boundary`).
         :type boundary_name: str
-        :returns: A dictionary which contains the keys 'faces', 'points',
-            'type'.
+        :returns: A dictionary which contains the keys `'faces'`, `'points'`,
+            `'type'`. The value corresponding to the key `'faces'` is a
+            dictionary which contains the following keys:
+
+            * `'faces_indexes'`: The indexes of the faces which compose this boundary;
+            * `'normals'`: The normalized vector normal to each face. The direction is taken according to the right-hand rule.
         :rtype: dict
         """
         data = mesh.boundary[boundary_name]
 
-        # extract faces which compose the boundary
-        bd_faces_indexes = np.array(list(range(data.start, data.start + data.num)))
-        bd_faces = np.concatenate([mesh.faces[idx] for idx in bd_faces_indexes])
+        # extract the indexes of the faces which compose the boundary
+        bd_faces_indexes = list(range(data.start, data.start + data.num))
 
+        # extract the faces which compose the boundary. each face is a
+        # list of indexes of points
+        bd_faces = np.concatenate(
+            [mesh.faces[idx] for idx in bd_faces_indexes]
+        )
         # extract a list of unique points which compose the boundary
         bd_points = np.unique(bd_faces)
 
-        return {"faces": bd_faces_indexes, "points": bd_points, "type": data.type}
+        # we now compute the normal vector to each face. we want to use NumPy.
+        # we just need the first three points for each face, therefore we can
+        # fix the problem that there may not be a unique number of points for
+        # each face.
+        first_three_points_indexes = np.concatenate(
+            [mesh.faces[idx][:3] for idx in bd_faces_indexes]
+        )
+        # the second index is the index of the point, the third is the cartesian
+        # index
+        first_three_points = np.reshape(
+            (mesh.points[first_three_points_indexes]), (-1, 3, 3)
+        )
+        vectors1 = first_three_points[:, 1] - first_three_points[:, 0]
+        vectors2 = first_three_points[:, 2] - first_three_points[:, 0]
+        cross = np.cross(vectors1, vectors2, axis=1)
+        normals_versors = np.divide(
+            cross, np.linalg.norm(cross, axis=1)[:, None]
+        )
+
+        # we also compute two versors which lie on the face, which we will
+        # use to get the projection of each point in order to obtain the
+        # area of the face
+        lying_versors1 = np.divide(
+            vectors1, np.linalg.norm(vectors1, axis=1)[:, None]
+        )
+        notnormalized_lying_versors2 = np.cross(
+            lying_versors1, normals_versors, axis=1
+        )
+        lying_versors2 = np.divide(
+            notnormalized_lying_versors2,
+            np.linalg.norm(notnormalized_lying_versors2, axis=1)[:, None],
+        )
+
+        lying_versors = np.concatenate(
+            [lying_versors1[:, None], lying_versors2[:, None]], axis=1
+        )
+
+        area = []
+        # now we compute the area. we have to use a loop since the number of
+        # points per face may not be unique
+        for face, versors in zip(
+            map(mesh.faces.__getitem__, bd_faces_indexes), lying_versors
+        ):
+            points = mesh.points[face]
+            projections = np.dot(points,versors.T)
+            area.append(_polyarea(*projections.T))
+
+        return {
+            "faces": {
+                "faces_indexes": bd_faces_indexes,
+                "normal": normals_versors,
+                'area': area,
+            },
+            "points": bd_points,
+            "type": data.type,
+        }
 
     @classmethod
     def _build_cells(cls, mesh, cell_idx):
@@ -133,9 +204,7 @@ class OpenFoamHandler:
         )
 
         if field_names == "all":
-            return map(
-                full_path_with_name, next(os.walk(fields_root_path))[2]
-            )
+            return map(full_path_with_name, next(os.walk(fields_root_path))[2])
         elif isinstance(field_names, list):
             return map(full_path_with_name, field_names)
         else:
@@ -191,15 +260,20 @@ class OpenFoamHandler:
         field_files = cls._find_fields_files(time_instant_path, field_names)
 
         return dict(
-            (name,
-                (cls._no_fail_boundary_field(field_path),
-                    cls._no_fail_internal_field(field_path)))
+            (
+                name,
+                (
+                    cls._no_fail_boundary_field(field_path),
+                    cls._no_fail_internal_field(field_path),
+                ),
+            )
             for name, field_path in field_files
         )
 
     @classmethod
-    def _build_time_instant_snapshot(cls, mesh, time_instant_path,
-        field_names):
+    def _build_time_instant_snapshot(
+        cls, mesh, time_instant_path, field_names
+    ):
         """Read all the content available for the time instant at the given
             path.
 
@@ -225,14 +299,13 @@ class OpenFoamHandler:
             "points": mesh.points,
             "faces": np.array(mesh.faces),
             "boundary": {
-                key: cls._build_boundary(mesh, key)
-                for key in mesh.boundary
+                key: cls._build_boundary(mesh, key) for key in mesh.boundary
             },
             "cells": {
                 cell_id: cls._build_cells(mesh, cell_id)
                 for cell_id in range(len(mesh.cell_faces))
             },
-            "fields": cls._load_fields(time_instant_path, field_names)
+            "fields": cls._load_fields(time_instant_path, field_names),
         }
 
     @classmethod
@@ -266,11 +339,20 @@ class OpenFoamHandler:
 
         ofpp_mesh = Ofpp.FoamMesh(filename)
 
-        time_instants = cls._find_time_instants_subfolders(filename,
-            time_instants)
+        time_instants = cls._find_time_instants_subfolders(
+            filename, time_instants
+        )
         if time_instants is not None:
-            return dict((name, cls._build_time_instant_snapshot(ofpp_mesh,
-                path, field_names)) for name, path in time_instants)
+            return dict(
+                (
+                    name,
+                    cls._build_time_instant_snapshot(
+                        ofpp_mesh, path, field_names
+                    ),
+                )
+                for name, path in time_instants
+            )
         else:
-            return cls._build_time_instant_snapshot(ofpp_mesh, filename,
-                field_names)
+            return cls._build_time_instant_snapshot(
+                ofpp_mesh, filename, field_names
+            )
