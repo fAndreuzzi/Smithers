@@ -421,7 +421,7 @@ class OpenFoamHandler:
         floatify_tuple = lambda tp: (float(tp[0]), tp[1])
         stringify_tuple = lambda tp: (str(tp[0]), tp[1])
 
-        time_instants = map(str, sorted(map(floatify_tuple, time_instants)))
+        time_instants = map(stringify_tuple, sorted(map(floatify_tuple, time_instants)))
         if time_instants is not None:
             time_dict = {}
 
