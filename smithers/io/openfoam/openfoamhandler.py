@@ -12,7 +12,9 @@ class OpenFoamHandler:
     """
 
     @classmethod
-    def _build_boundary(cls, points, faces, boundary_data):
+    def _build_boundary(
+        cls, points, faces, boundary_data, incremental_point_count
+    ):
         """Extract information about a boundary.
 
         :param points: An array of the points which compose the mesh.
@@ -38,8 +40,12 @@ class OpenFoamHandler:
         # extract the faces which compose the boundary. each face is a
         # list of indexes of points
         bd_faces = np.concatenate([faces[idx] for idx in bd_faces_indexes])
+
         # extract a list of unique points which compose the boundary
         bd_points = np.unique(bd_faces)
+
+        # adjust
+        bd_faces -= incremental_point_count
 
         # we now compute the normal vector to each face. we want to use NumPy.
         # we just need the first three points for each face, therefore we can
@@ -156,7 +162,7 @@ class OpenFoamHandler:
         if (
             fields_time_instants == "all_numeric"
             or fields_time_instants == "first"
-            or fields_time_instants == 'not_first'
+            or fields_time_instants == "not_first"
         ):
             subfolders = next(os.walk(path))[1]
             subfolders = list(filter(is_numeric, subfolders))
@@ -166,7 +172,7 @@ class OpenFoamHandler:
 
             if fields_time_instants == "all_numeric":
                 time_instant_subfolders = subfolders
-            elif fields_time_instants == 'not_first':
+            elif fields_time_instants == "not_first":
                 time_instant_subfolders = sorted(subfolders)[1:]
             else:
                 # we want a list in order to return an iterable object
@@ -271,7 +277,12 @@ class OpenFoamHandler:
 
     @classmethod
     def _build_time_instant_snapshot(
-        cls, mesh, time_instant_path, field_names, traveling_mesh
+        cls,
+        mesh,
+        time_instant_path,
+        field_names,
+        traveling_mesh,
+        incremental_point_count,
     ):
         """Read all the content available for the time instant at the given
             path.
@@ -290,11 +301,13 @@ class OpenFoamHandler:
             * `'boundary'`: output of :func:`_build_boundary`;
             * `'cells'`: cells of the mesh at the given time instants;
             * `'fields'`: output of :func:`_load_fields`;
+            * `'incremental_point_count'`: number of points defined in this mesh after parsing this time instant.
         :rtype: dict
         """
 
         if not traveling_mesh:
             points = mesh.points
+            new_incremental_point_count = incremental_point_count
         else:
             points = read_mesh_file(
                 os.path.join(time_instant_path, "polyMesh/points"),
@@ -302,8 +315,17 @@ class OpenFoamHandler:
             )
 
             if points is None:
-                print("'points' not found at t={}, using the initial value.".format(time_instant_path))
+                print(
+                    "'points' not found at t={}, using the initial value.".format(
+                        time_instant_path
+                    )
+                )
                 points = mesh.points
+                new_incremental_point_count = incremental_point_count
+            else:
+                new_incremental_point_count = incremental_point_count + len(
+                    points
+                )
 
         if not traveling_mesh:
             faces = np.asarray(mesh.faces)
@@ -314,7 +336,11 @@ class OpenFoamHandler:
             )
 
             if faces is None:
-                print("'faces' not found at t={}, using the initial value.".format(time_instant_path))
+                print(
+                    "'faces' not found at t={}, using the initial value.".format(
+                        time_instant_path
+                    )
+                )
                 faces = mesh.faces
 
         if not traveling_mesh:
@@ -326,7 +352,11 @@ class OpenFoamHandler:
             )
 
             if boundary_data is None:
-                print("'boundary' not found at t={}, using the initial value.".format(time_instant_path))
+                print(
+                    "'boundary' not found at t={}, using the initial value.".format(
+                        time_instant_path
+                    )
+                )
                 # TODO: what if only certain boundaries are moving?
                 boundary_data = mesh.boundary
 
@@ -334,7 +364,9 @@ class OpenFoamHandler:
             "points": points,
             "faces": faces,
             "boundary": {
-                key: cls._build_boundary(points, faces, boundary_data[key])
+                key: cls._build_boundary(
+                    points, faces, boundary_data[key], incremental_point_count
+                )
                 for key in mesh.boundary
             },
             "cells": {
@@ -342,6 +374,7 @@ class OpenFoamHandler:
                 for cell_id in range(len(mesh.cell_faces))
             },
             "fields": cls._load_fields(time_instant_path, field_names),
+            "new_incremental_point_count": new_incremental_point_count,
         }
 
     @classmethod
@@ -384,16 +417,22 @@ class OpenFoamHandler:
         time_instants = cls._find_time_instants_subfolders(
             filename, time_instants
         )
+        time_instants = map(str, sorted(map(float, time_instants)))
         if time_instants is not None:
-            return dict(
-                (
-                    name,
-                    cls._build_time_instant_snapshot(
-                        ofpp_mesh, path, field_names, traveling_mesh
-                    ),
+            time_dict = {}
+
+            incremental_points_count = 0
+            for name, path in time_instants:
+                dict[name] = cls._build_time_instant_snapshot(
+                    ofpp_mesh,
+                    path,
+                    field_names,
+                    traveling_mesh,
+                    incremental_point_count=incremental_point_count,
                 )
-                for name, path in time_instants
-            )
+                incremental_points_count = dict[name][
+                    "new_incremental_point_count"
+                ]
         else:
             return cls._build_time_instant_snapshot(
                 ofpp_mesh, filename, field_names
