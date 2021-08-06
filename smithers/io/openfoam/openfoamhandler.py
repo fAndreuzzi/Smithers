@@ -425,7 +425,7 @@ class OpenFoamHandler:
         if time_instants is not None:
             time_dict = {}
 
-            incremental_points_count = 0
+            incremental_point_count = 0
             for name, path in time_instants:
                 dict[name] = cls._build_time_instant_snapshot(
                     ofpp_mesh,
@@ -434,7 +434,7 @@ class OpenFoamHandler:
                     traveling_mesh,
                     incremental_point_count=incremental_point_count,
                 )
-                incremental_points_count = dict[name][
+                incremental_point_count = dict[name][
                     "new_incremental_point_count"
                 ]
         else:
