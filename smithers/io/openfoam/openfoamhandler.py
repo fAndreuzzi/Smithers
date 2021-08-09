@@ -113,9 +113,9 @@ class OpenFoamHandler:
         :rtype: dict
         """
         cell_faces_idxes = mesh.cell_faces[cell_idx]
-
-        cell_faces = np.array([mesh.faces[idx] for idx in cell_faces_idxes])
-        cell_points = np.unique(np.concatenate(cell_faces))
+        cell_points = np.unique(
+            np.concatenate([mesh.faces[idx] for idx in cell_faces_idxes])
+        )
 
         return {
             "faces": cell_faces_idxes,
@@ -156,7 +156,7 @@ class OpenFoamHandler:
         if (
             fields_time_instants == "all_numeric"
             or fields_time_instants == "first"
-            or fields_time_instants == 'not_first'
+            or fields_time_instants == "not_first"
         ):
             subfolders = next(os.walk(path))[1]
             subfolders = list(filter(is_numeric, subfolders))
@@ -166,7 +166,7 @@ class OpenFoamHandler:
 
             if fields_time_instants == "all_numeric":
                 time_instant_subfolders = subfolders
-            elif fields_time_instants == 'not_first':
+            elif fields_time_instants == "not_first":
                 time_instant_subfolders = sorted(subfolders)[1:]
             else:
                 # we want a list in order to return an iterable object
@@ -302,11 +302,15 @@ class OpenFoamHandler:
             )
 
             if points is None:
-                print("'points' not found at t={}, using the initial value.".format(time_instant_path))
+                print(
+                    "'points' not found at t={}, using the initial value.".format(
+                        time_instant_path
+                    )
+                )
                 points = mesh.points
 
         if not traveling_mesh:
-            faces = np.asarray(mesh.faces)
+            faces = mesh.faces
         else:
             faces = read_mesh_file(
                 os.path.join(time_instant_path, "polyMesh/faces"),
@@ -314,7 +318,11 @@ class OpenFoamHandler:
             )
 
             if faces is None:
-                print("'faces' not found at t={}, using the initial value.".format(time_instant_path))
+                print(
+                    "'faces' not found at t={}, using the initial value.".format(
+                        time_instant_path
+                    )
+                )
                 faces = mesh.faces
 
         if not traveling_mesh:
@@ -326,7 +334,11 @@ class OpenFoamHandler:
             )
 
             if boundary_data is None:
-                print("'boundary' not found at t={}, using the initial value.".format(time_instant_path))
+                print(
+                    "'boundary' not found at t={}, using the initial value.".format(
+                        time_instant_path
+                    )
+                )
                 # TODO: what if only certain boundaries are moving?
                 boundary_data = mesh.boundary
 
