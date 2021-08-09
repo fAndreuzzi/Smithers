@@ -427,7 +427,7 @@ class OpenFoamHandler:
 
             incremental_point_count = 0
             for name, path in time_instants:
-                dict[name] = cls._build_time_instant_snapshot(
+                time_dict[name] = cls._build_time_instant_snapshot(
                     ofpp_mesh,
                     path,
                     field_names,
