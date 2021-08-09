@@ -55,7 +55,6 @@ class OpenFoamHandler:
             [faces[idx][:3] for idx in bd_faces_indexes]
         )
         print(faces[bd_faces_indexes[-1]])
-        print(faces[bd_faces_indexes[-1][:3]])
         print(first_three_points_indexes)
         # the second index is the index of the point, the third is the cartesian
         # index
