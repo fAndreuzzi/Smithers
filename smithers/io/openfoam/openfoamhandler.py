@@ -329,8 +329,7 @@ class OpenFoamHandler:
                 )
 
         if not traveling_mesh:
-            print(mesh.faces)
-            faces = np.asarray(mesh.faces)
+            faces = mesh.faces
         else:
             faces = read_mesh_file(
                 os.path.join(time_instant_path, "polyMesh/faces"),
