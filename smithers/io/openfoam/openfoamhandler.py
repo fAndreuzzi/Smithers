@@ -430,7 +430,7 @@ class OpenFoamHandler:
 
             incremental_point_count = 0
             for name, path in time_instants:
-                print('now doing {}'.format(path))
+                print('now doing {}'.format(name))
                 if name == '0':
                     print('skipping 0')
                     continue
