@@ -440,6 +440,7 @@ class OpenFoamHandler:
                 incremental_point_count = time_dict[name][
                     "new_incremental_point_count"
                 ]
+            return time_dict
         else:
             return cls._build_time_instant_snapshot(
                 ofpp_mesh, filename, field_names
