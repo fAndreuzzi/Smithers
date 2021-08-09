@@ -97,7 +97,7 @@ class OpenFoamHandler:
                 "area": area,
             },
             "points": bd_points,
-            "type": data.type,
+            "type": boundary_data.type,
         }
 
     @classmethod
