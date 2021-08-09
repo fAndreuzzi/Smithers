@@ -120,6 +120,7 @@ class OpenFoamHandler:
         """
         cell_faces_idxes = mesh.cell_faces[cell_idx]
 
+        print([mesh.faces[idx] for idx in cell_faces_idxes])
         cell_faces = np.array([mesh.faces[idx] for idx in cell_faces_idxes])
         cell_points = np.unique(np.concatenate(cell_faces))
 
@@ -434,7 +435,7 @@ class OpenFoamHandler:
                     traveling_mesh,
                     incremental_point_count=incremental_point_count,
                 )
-                incremental_point_count = dict[name][
+                incremental_point_count = time_dict[name][
                     "new_incremental_point_count"
                 ]
         else:
