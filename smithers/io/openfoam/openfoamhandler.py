@@ -87,7 +87,7 @@ class OpenFoamHandler:
         # now we compute the area. we have to use a loop since the number of
         # points per face may not be unique
         area = [
-            _polyarea(*project(points[point_idxes], versors).T)
+            polyarea(*project(points[point_idxes], versors).T)
             # for each face we have a matrix of two rows, which contain a couple
             # of orthogonal normalized vectors which lie on the corresponding
             # face
