@@ -120,8 +120,9 @@ class OpenFoamHandler:
         """
         cell_faces_idxes = mesh.cell_faces[cell_idx]
 
-        print([mesh.faces[idx] for idx in cell_faces_idxes])
-        cell_faces = np.array([mesh.faces[idx] for idx in cell_faces_idxes])
+        cell_faces = np.concatenate(
+            [mesh.faces[idx] for idx in cell_faces_idxes]
+        )
         cell_points = np.unique(np.concatenate(cell_faces))
 
         return {
@@ -422,7 +423,9 @@ class OpenFoamHandler:
         floatify_tuple = lambda tp: (float(tp[0]), tp[1])
         stringify_tuple = lambda tp: (str(tp[0]), tp[1])
 
-        time_instants = map(stringify_tuple, sorted(map(floatify_tuple, time_instants)))
+        time_instants = map(
+            stringify_tuple, sorted(map(floatify_tuple, time_instants))
+        )
         if time_instants is not None:
             time_dict = {}
 
