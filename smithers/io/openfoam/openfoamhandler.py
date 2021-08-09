@@ -430,8 +430,8 @@ class OpenFoamHandler:
 
             incremental_point_count = 0
             for name, path in time_instants:
-                print('now doing {}'.format(name))
-                if name == '0':
+                print('now doing {}'.format(path))
+                if path == './0':
                     print('skipping 0')
                     continue
                 time_dict[name] = cls._build_time_instant_snapshot(
