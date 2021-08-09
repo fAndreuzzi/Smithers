@@ -54,7 +54,8 @@ class OpenFoamHandler:
         first_three_points_indexes = np.concatenate(
             [faces[idx][:3] for idx in bd_faces_indexes]
         )
-        print(faces)
+        print('first 10 faces:')
+        print(faces[:10])
         print(faces[bd_faces_indexes[-1]])
         print(first_three_points_indexes)
         # the second index is the index of the point, the third is the cartesian
@@ -433,10 +434,6 @@ class OpenFoamHandler:
 
             incremental_point_count = 0
             for name, path in time_instants:
-                print('now doing {}'.format(path))
-                if path == './0':
-                    print('skipping 0')
-                    continue
                 time_dict[name] = cls._build_time_instant_snapshot(
                     ofpp_mesh,
                     path,
