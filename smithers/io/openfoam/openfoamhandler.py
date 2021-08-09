@@ -430,6 +430,7 @@ class OpenFoamHandler:
 
             incremental_point_count = 0
             for name, path in time_instants:
+                print('now doing {}'.format(path))
                 time_dict[name] = cls._build_time_instant_snapshot(
                     ofpp_mesh,
                     path,
