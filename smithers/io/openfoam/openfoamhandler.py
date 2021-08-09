@@ -120,10 +120,9 @@ class OpenFoamHandler:
         """
         cell_faces_idxes = mesh.cell_faces[cell_idx]
 
-        cell_faces = np.concatenate(
-            [mesh.faces[idx] for idx in cell_faces_idxes]
+        cell_points = np.unique(
+            np.concatenate([mesh.faces[idx] for idx in cell_faces_idxes])
         )
-        cell_points = np.unique(np.concatenate(cell_faces))
 
         return {
             "faces": cell_faces_idxes,
