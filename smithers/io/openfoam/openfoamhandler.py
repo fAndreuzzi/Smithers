@@ -295,12 +295,14 @@ class OpenFoamHandler:
 
         if not traveling_mesh:
             points = mesh.points
+            faces = mesh.faces
+            boundary_data = mesh.boundary
         else:
+            # POINTS
             points = read_mesh_file(
                 os.path.join(time_instant_path, "polyMesh/points"),
                 Parser.POINTS,
             )
-
             if points is None:
                 print(
                     "'points' not found at t={}, using the initial value.".format(
@@ -309,14 +311,11 @@ class OpenFoamHandler:
                 )
                 points = mesh.points
 
-        if not traveling_mesh:
-            faces = mesh.faces
-        else:
+            # FACES
             faces = read_mesh_file(
                 os.path.join(time_instant_path, "polyMesh/faces"),
                 Parser.FACES,
             )
-
             if faces is None:
                 print(
                     "'faces' not found at t={}, using the initial value.".format(
@@ -325,26 +324,36 @@ class OpenFoamHandler:
                 )
                 faces = mesh.faces
 
-        if not traveling_mesh:
-            boundary_data = mesh.boundary
-        else:
+            # BOUNDARY
             boundary_data = read_mesh_file(
                 os.path.join(time_instant_path, "polyMesh/boundary"),
                 Parser.BOUNDARY,
             )
-
             if boundary_data is None:
                 print(
                     "'boundary' not found at t={}, using the initial value.".format(
                         time_instant_path
                     )
                 )
-                # TODO: what if only certain boundaries are moving?
                 boundary_data = mesh.boundary
+
+            # OWNER
+            owner_data = read_mesh_file(
+                os.path.join(time_instant_path, "polyMesh/owner"),
+                Parser.OWNER,
+            )
+            if owner_data is None:
+                print(
+                    "'owner' not found at t={}, using the initial value.".format(
+                        time_instant_path
+                    )
+                )
+                owner_data = mesh.owner
 
         return {
             "points": points,
             "faces": faces,
+            "face_ownert_cell": owner_data,
             "boundary": {
                 key: cls._build_boundary(points, faces, boundary_data[key])
                 for key in mesh.boundary

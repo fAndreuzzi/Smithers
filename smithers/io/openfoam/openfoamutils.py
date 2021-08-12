@@ -15,6 +15,7 @@ class Parser(Enum):
     POINTS = auto()
     FACES = auto()
     BOUNDARY = auto()
+    OWNER = auto()
 
 
 def read_mesh_file(filename, parser: Parser):
@@ -31,6 +32,8 @@ def read_mesh_file(filename, parser: Parser):
         parser = FoamMesh.parse_faces_content
     elif parser == Parser.BOUNDARY:
         parser = FoamMesh.parse_boundary_content
+    elif parser == Parser.OWNER:
+        parser = FoamMesh.parse_owner_neighbour_content()
     else:
         raise ValueError("Invalid parser.")
 
