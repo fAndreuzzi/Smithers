@@ -33,7 +33,7 @@ def read_mesh_file(filename, parser: Parser):
     elif parser == Parser.BOUNDARY:
         parser = FoamMesh.parse_boundary_content
     elif parser == Parser.OWNER:
-        parser = FoamMesh.parse_owner_neighbour_content()
+        parser = FoamMesh.parse_owner_neighbour_content
     else:
         raise ValueError("Invalid parser.")
 
