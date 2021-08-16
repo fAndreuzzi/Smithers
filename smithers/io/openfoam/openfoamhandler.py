@@ -353,7 +353,7 @@ class OpenFoamHandler:
         return {
             "points": points,
             "faces": faces,
-            "face_ownert_cell": owner_data,
+            "face_owner_cell": owner_data,
             "boundary": {
                 key: cls._build_boundary(points, faces, boundary_data[key])
                 for key in mesh.boundary
