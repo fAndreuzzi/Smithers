@@ -34,7 +34,7 @@ class OpenFoamHandler:
             indexes = indexes[3:]
 
             triangle = triangle[[1, 2]] - triangle[0]
-            normals.append(np.cross(triangle[0], triangle[1], axis=1))
+            normals.append(np.cross(triangle[0], triangle[1], axis=0))
         mean = np.mean(normals, axis=0)
         return np.divide(mean, np.linalg.norm(mean))
 
