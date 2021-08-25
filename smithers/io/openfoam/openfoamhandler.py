@@ -14,14 +14,26 @@ class OpenFoamHandler:
     @classmethod
     def _normal(cls, points):
         points = np.asarray(points)
+        if points.shape[0] < 3:
+            raise ValueError(
+                "{} points do not form a face".format(points.shape)
+            )
+
         indexes = list(range(points.shape[0]))
 
         normals = []
         while len(indexes) > 0:
+            # if there are not enough points to form a triangle, add the first
+            # ones
+            if len(indexes) == 1:
+                indexes = [0, 1, indexes[0]]
+            elif len(indexes) == 2:
+                indexes = [0, indexes[0], indexes[1]]
+
             triangle = points[indexes[:3]]
             indexes = indexes[3:]
 
-            triangle = triangle[[1,2]] - triangle[0]
+            triangle = triangle[[1, 2]] - triangle[0]
             normals.append(np.cross(triangle[0], triangle[1], axis=1))
         mean = np.mean(normals, axis=0)
         return np.divide(mean, np.linalg.norm(mean))
@@ -202,8 +214,7 @@ class OpenFoamHandler:
             return list(map(full_path_with_label, fields_time_instants))
         else:
             raise ValueError(
-                """Invalid value for the argument
-                `fields_time_instants`"""
+                """Invalid value for the argument `time_instants`"""
             )
 
     @classmethod
