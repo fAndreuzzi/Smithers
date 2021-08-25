@@ -12,6 +12,21 @@ class OpenFoamHandler:
     """
 
     @classmethod
+    def _normal(cls, points):
+        points = np.asarray(points)
+        indexes = list(range(points.shape[0]))
+
+        normals = []
+        while len(indexes) > 0:
+            triangle = points[indexes[:3]]
+            indexes = indexes[3:]
+
+            triangle = triangle[[1,2]] - triangle[0]
+            normals.append(np.cross(triangle[0], triangle[1], axis=1))
+        mean = np.mean(normals, axis=0)
+        return np.divide(mean, np.linalg.norm(mean))
+
+    @classmethod
     def _build_boundary(cls, points, faces, boundary_data):
         """Extract information about a boundary.
 
@@ -41,6 +56,14 @@ class OpenFoamHandler:
         # extract a list of unique points which compose the boundary
         bd_points = np.unique(bd_faces)
 
+        normals = []
+        for face_idx in bd_faces_indexes:
+            pts_indexes = faces[face_idx]
+            pts = list(map(points.__getitem__, pts_indexes))
+            nrm = cls._normal(pts)
+            normals.append(nrm)
+        normals = np.array(normals)
+
         # we now compute the normal vector to each face. we want to use NumPy.
         # we just need the first three points for each face, therefore we can
         # fix the problem that there may not be a unique number of points for
@@ -49,7 +72,7 @@ class OpenFoamHandler:
             [faces[idx][:3] for idx in bd_faces_indexes]
         )
         # the second index is the index of the point, the third is the cartesian
-        # index
+        # index, the first index is the index of the face
         first_three_points = np.reshape(
             (points[first_three_points_indexes]), (-1, 3, 3)
         )
@@ -93,7 +116,7 @@ class OpenFoamHandler:
         return {
             "faces": {
                 "faces_indexes": bd_faces_indexes,
-                "normal": normals_versors,
+                "normal": normals,
                 "area": area,
             },
             "points": bd_points,
