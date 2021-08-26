@@ -2,7 +2,7 @@ from unittest import TestCase
 import unittest
 import numpy as np
 import Ofpp
-from smithers.io.openfoamhandler import OpenFoamHandler
+from smithers.io.openfoam import OpenFoamHandler
 
 openfoam_mesh_path = "tests/test_datasets/openfoam_mesh"
 notime_openfoam_mesh_path = "tests/test_datasets/notime_openfoam_mesh"
@@ -133,3 +133,13 @@ class TestOpenFoamHandler(TestCase):
             0.039269502373542965,
             decimal=7,
         )
+
+    def test_normal(self):
+        pts = np.array([
+            [-0.0253502 ,  0.0316261 ,  0.00580305],
+            [-0.0253914 ,  0.031353  ,  0.00544693],
+            [-0.0256058 ,  0.0328658 ,  0.00509551],
+            [-0.0254315 ,  0.0330261 ,  0.00597875]
+        ])
+
+        nrm = OpenFoamHandler._normal(pts)

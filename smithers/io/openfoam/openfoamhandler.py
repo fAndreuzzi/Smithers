@@ -331,6 +331,7 @@ class OpenFoamHandler:
             points = mesh.points
             faces = mesh.faces
             boundary_data = mesh.boundary
+            owner_data = mesh.owner
         else:
             # POINTS
             points = read_mesh_file(
@@ -385,9 +386,9 @@ class OpenFoamHandler:
                 owner_data = mesh.owner
 
         return {
-            "points": points,
-            "faces": faces,
-            "face_owner_cell": owner_data,
+            "points": np.asarray(points),
+            "faces": np.asarray(faces),
+            "face_owner_cell": np.asarray(owner_data),
             "boundary": {
                 key: cls._build_boundary(points, faces, boundary_data[key])
                 for key in mesh.boundary
@@ -451,5 +452,5 @@ class OpenFoamHandler:
             )
         else:
             return cls._build_time_instant_snapshot(
-                ofpp_mesh, filename, field_names
+                ofpp_mesh, filename, field_names, traveling_mesh
             )
