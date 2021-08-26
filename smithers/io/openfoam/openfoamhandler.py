@@ -30,7 +30,7 @@ class OpenFoamHandler:
             if normal is None:
                 normal = n
             else:
-                normal += np.dot(normal, n) > 0 ? n : -n
+                normal += n if np.dot(normal, n) > 0 else -n
 
         return np.divide(normal, np.linalg.norm(normal))
 
