@@ -4,12 +4,12 @@ import numpy as np
 import Ofpp
 from smithers.io.openfoam import OpenFoamHandler
 
-openfoam_mesh_path = "tests/test_datasets/openfoam_mesh"
-notime_openfoam_mesh_path = "tests/test_datasets/notime_openfoam_mesh"
-
-handler = OpenFoamHandler()
-mesh = handler.read(openfoam_mesh_path)
-truth_mesh = Ofpp.FoamMesh(openfoam_mesh_path)
+# openfoam_mesh_path = "tests/test_datasets/openfoam_mesh"
+# notime_openfoam_mesh_path = "tests/test_datasets/notime_openfoam_mesh"
+#
+# handler = OpenFoamHandler()
+# mesh = handler.read(openfoam_mesh_path)
+# truth_mesh = Ofpp.FoamMesh(openfoam_mesh_path)
 
 
 class TestOpenFoamHandler(TestCase):
@@ -135,11 +135,19 @@ class TestOpenFoamHandler(TestCase):
         )
 
     def test_normal(self):
-        pts = np.array([
-            [-0.0253502 ,  0.0316261 ,  0.00580305],
-            [-0.0253914 ,  0.031353  ,  0.00544693],
-            [-0.0256058 ,  0.0328658 ,  0.00509551],
-            [-0.0254315 ,  0.0330261 ,  0.00597875]
-        ])
+        pts = np.array(
+            [
+                [0.0885645, 0.0251962, -0.00600428],
+                [0.0889777, 0.0231957, -0.00672502],
+                [0.0898778, 0.0228918, -0.00615139],
+                [0.0905728, 0.0235876, -0.00528578],
+                [0.090508, 0.0245859, -0.00486781],
+                [0.0897358, 0.0248498, -0.00532508],
+            ]
+        )
+        vecs = pts[1:len(pts)] - pts[0]
 
         nrm = OpenFoamHandler._normal(pts)
+        dots = np.dot(vecs, nrm)
+
+        np.testing.assert_allclose(dots[dots != 0], 0, atol=1e-4)
