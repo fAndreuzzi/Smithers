@@ -19,16 +19,20 @@ class OpenFoamHandler:
                 "{} points do not form a face".format(points.shape)
             )
 
-        normals = []
+        normal = None
 
         first_index = 0
         while first_index + 3 <= points.shape[0]:
             triangle = points[first_index+1:first_index+3] - points[first_index]
-            normals.append(np.cross(triangle[0], triangle[1]))
             first_index += 1
 
-        mean = np.mean(normals, axis=0)
-        return np.divide(mean, np.linalg.norm(mean))
+            n = np.cross(triangle[0], triangle[1])
+            if normal is None:
+                normal = n
+            else:
+                normal += np.dot(normal, n) > 0 ? n : -n
+
+        return np.divide(normal, np.linalg.norm(normal))
 
     @classmethod
     def _build_boundary(cls, points, faces, boundary_data):
