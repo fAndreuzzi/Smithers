@@ -383,7 +383,9 @@ class OpenFoamHandler:
 
         return {
             "points": np.asarray(points),
-            "faces": np.asarray(faces),
+            # this is goint to raise a warning since the number of points in a
+            # face might differ from the others
+            "faces": np.asarray(faces, dtype=object),
             "face_owner_cell": np.asarray(owner_data),
             "boundary": {
                 key: cls._build_boundary(points, faces, boundary_data[key])
