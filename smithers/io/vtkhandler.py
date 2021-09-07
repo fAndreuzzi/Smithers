@@ -1,22 +1,24 @@
 from .basevtkhandler import BaseVTKHandler
 
+from vtk import vtkPolyDataReader, vtkPolyDataWriter
+from vtk import vtkUnstructuredGridReader, vtkUnstructuredGridWriter
+from vtk import vtkPolyData, vtkUnstructuredGrid
+
+from vtk import vtkPolyData, vtkPoints, vtkCellArray
+from vtk.util.numpy_support import numpy_to_vtk
+
 class VTKHandler(BaseVTKHandler):
     """
     Handler for .VTK files.
     """
-    from vtk import vtkPolyDataReader, vtkPolyDataWriter
-    from vtk import vtkUnstructuredGridReader, vtkUnstructuredGridWriter
-    from vtk import vtkPolyData, vtkUnstructuredGrid
 
-    _data_type_ = vtkPolyData
+    def __init__(self, reader, writer):
+        self._reader = reader
+        self._writer = writer
 
-    _reader_ = vtkUnstructuredGridReader
-    _writer_ = vtkUnstructuredGridWriter
+    def read(self, filename):
 
-    @classmethod
-    def read(cls, filename):
-
-        reader = cls._reader_()
+        reader = self._reader()
         reader.SetFileName(filename)
         reader.Update()
         data = reader.GetOutput()
@@ -29,20 +31,15 @@ class VTKHandler(BaseVTKHandler):
                 for id_point in range(cell.GetNumberOfPoints())
             ])
 
-        result['points'] = cls._vtk_to_numpy_(data.GetPoints().GetData())
+        result['points'] = self._vtk_to_numpy_(data.GetPoints().GetData())
 
-        result['point_data'] = cls._read_point_data(data)
-        result['cell_data'] = cls._read_cell_data(data)
+        result['point_data'] = self._read_point_data(data)
+        result['cell_data'] = self._read_cell_data(data)
 
         return result
 
     @classmethod
-    def write(cls, filename, data):
-        """ TODO """
-
-        from vtk import vtkPolyData, vtkPoints, vtkCellArray
-        from vtk.util.numpy_support import numpy_to_vtk
-
+    def write(self, filename, data):
         polydata = vtkPolyData()
 
         vtk_points = vtkPoints()
@@ -52,13 +49,13 @@ class VTKHandler(BaseVTKHandler):
         for cell in data['cells']:
             vtk_cells.InsertNextCell(len(cell), cell)
 
-        cls._write_point_data(polydata, data)
-        cls._write_cell_data(polydata, data)
+        self._write_point_data(polydata, data)
+        self._write_cell_data(polydata, data)
 
         polydata.SetPoints(vtk_points)
         polydata.SetPolys(vtk_cells)
 
-        writer = cls._writer_()
+        writer = self._writer()
         writer.SetFileName(filename)
         writer.SetInputData(polydata)
         writer.Write()
