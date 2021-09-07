@@ -38,7 +38,6 @@ class VTKHandler(BaseVTKHandler):
 
         return result
 
-    @classmethod
     def write(self, filename, data):
         polydata = vtkPolyData()
 
