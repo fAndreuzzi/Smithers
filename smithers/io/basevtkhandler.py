@@ -5,11 +5,10 @@ It contains the recurrent functions shared between the different file handlers.
 """
 from abc import ABC
 
+from vtk import vtkPoints, vtkCellArray
+from vtk.util.numpy_support import vtk_to_numpy, numpy_to_vtk
+
 class BaseVTKHandler(ABC):
-
-    from vtk import vtkPoints, vtkCellArray
-
-    from vtk.util.numpy_support import vtk_to_numpy, numpy_to_vtk
 
     _points_ = vtkPoints
     _cells_ = vtkCellArray
@@ -23,7 +22,7 @@ class BaseVTKHandler(ABC):
         """
         result = {}
         for i in range(vtkdata.GetPointData().GetNumberOfArrays()):
-            array = cls._vtk_to_numpy_(vtkdata.GetPointData().GetArray(i))
+            array = vtk_to_numpy(vtkdata.GetPointData().GetArray(i))
             name = vtkdata.GetPointData().GetArrayName(i)
             result[name] = array
         return result
@@ -37,7 +36,7 @@ class BaseVTKHandler(ABC):
         """
         result = {}
         for i in range(vtkdata.GetCellData().GetNumberOfArrays()):
-            array = cls._vtk_to_numpy_(vtkdata.GetCellData().GetArray(i))
+            array = vtk_to_numpy(vtkdata.GetCellData().GetArray(i))
             name = vtkdata.GetCellData().GetArrayName(i)
             result[name] = array
         return result
@@ -51,7 +50,7 @@ class BaseVTKHandler(ABC):
         :param dict data: dictionary
         """
         for name, array in data['point_data'].items():
-            vtkarray = cls._numpy_to_vtk_(array)
+            vtkarray = numpy_to_vtk(array)
             vtkarray.SetName(name)
             vtkdata.GetPointData().AddArray(vtkarray)
 
@@ -64,6 +63,6 @@ class BaseVTKHandler(ABC):
         :param dict data: dictionary
         """
         for name, array in data['cell_data'].items():
-            vtkarray = cls._numpy_to_vtk_(array)
+            vtkarray = numpy_to_vtk(array)
             vtkarray.SetName(name)
             vtkdata.GetCellData().AddArray(vtkarray)
