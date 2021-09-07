@@ -17,11 +17,12 @@ class VTKHandler(BaseVTKHandler):
         self._writer = writer
 
     def read(self, filename):
-
         reader = self._reader()
         reader.SetFileName(filename)
         reader.Update()
-        data = reader.GetOutput()
+        return reader.GetOutput()
+
+    def parse(self, data):
         result = {'cells': [], 'points': None}
 
         for id_cell in range(data.GetNumberOfCells()):
