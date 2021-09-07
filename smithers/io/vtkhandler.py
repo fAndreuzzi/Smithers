@@ -5,7 +5,7 @@ from vtk import vtkUnstructuredGridReader, vtkUnstructuredGridWriter
 from vtk import vtkPolyData, vtkUnstructuredGrid
 
 from vtk import vtkPolyData, vtkPoints, vtkCellArray
-from vtk.util.numpy_support import numpy_to_vtk
+from vtk.util.numpy_support import numpy_to_vtk, vtk_to_numpy
 
 class VTKHandler(BaseVTKHandler):
     """
@@ -31,7 +31,7 @@ class VTKHandler(BaseVTKHandler):
                 for id_point in range(cell.GetNumberOfPoints())
             ])
 
-        result['points'] = self._vtk_to_numpy_(data.GetPoints().GetData())
+        result['points'] = vtk_to_numpy(data.GetPoints().GetData())
 
         result['point_data'] = self._read_point_data(data)
         result['cell_data'] = self._read_cell_data(data)

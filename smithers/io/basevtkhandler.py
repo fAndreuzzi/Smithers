@@ -11,8 +11,6 @@ class BaseVTKHandler(ABC):
 
     from vtk.util.numpy_support import vtk_to_numpy, numpy_to_vtk
 
-    _vtk_to_numpy_ = vtk_to_numpy
-    _numpy_to_vtk_ = numpy_to_vtk
     _points_ = vtkPoints
     _cells_ = vtkCellArray
 
@@ -50,7 +48,7 @@ class BaseVTKHandler(ABC):
         Write all the arrays in `data['point_data']` to the `vtkdata`.
 
         :param vtkObject vtkdata: a vtk object (vtkPolyData, vtkUnstructuredGrid, ...)
-        :param dict data: dictionary 
+        :param dict data: dictionary
         """
         for name, array in data['point_data'].items():
             vtkarray = cls._numpy_to_vtk_(array)
@@ -63,7 +61,7 @@ class BaseVTKHandler(ABC):
         Write all the arrays in `data['cell_data']` to the `vtkdata`.
 
         :param vtkObject vtkdata: a vtk object (vtkPolyData, vtkUnstructuredGrid, ...)
-        :param dict data: dictionary 
+        :param dict data: dictionary
         """
         for name, array in data['cell_data'].items():
             vtkarray = cls._numpy_to_vtk_(array)
