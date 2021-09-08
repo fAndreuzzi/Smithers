@@ -20,7 +20,7 @@ class VTKHandler(BaseVTKHandler):
         reader = self._reader()
         reader.SetFileName(filename)
         reader.Update()
-        return reader.GetOutput()
+        return self.parse(reader.GetOutput())
 
     def parse(self, data):
         result = {'cells': [], 'points': None}
