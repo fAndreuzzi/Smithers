@@ -122,7 +122,7 @@ class ObjHandler:
         return np.max(data.vertices, axis=0) - np.min(data.vertices, axis=0)
 
     @classmethod
-    def write(cls, data, filename):
+    def write(cls, filename, data):
         """Write the given instance of
         :class:`smithers.io.obj.objparser.WavefrontOBJ` to disk.
 
